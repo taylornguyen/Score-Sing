@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "name": "score-sing",
+  "runtime_identity": "score-sing",
+  "display_name": "Score Sing",
+  "description": "Sheet music companion for Spotify playback on Windows and iPhone.",
+  "port": 4012,
+  "public_host": "score-sing.multi.excessivecode.com",
+  "health_path": "/api/health",
+  "services": [
+    "app_score-sing.service"
+  ],
+  "runtime": {
+    "kind": "node",
+    "entrypoint": "server.js"
+  },
+  "deployment": {
+    "require_locked_python": true
+  },
+  "auth": {
+    "provider": "authreturn",
+    "authreturn_app_slug": "score-sing"
+  }
+}
