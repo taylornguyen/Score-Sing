@@ -68,6 +68,23 @@ test('invalid playback metadata fails visibly rather than crashing the UI',async
 test('no active song is a completed empty state',async()=>{
  const s=await setup();globalThis.fetch=async()=>new Response(null,{status:204});assert.equal(await s.playback(),null);
 });
+test('audio features fetch validated tempo and meter once per track',async()=>{
+ const s=await setup(),trackId='2'.repeat(22);let calls=0;
+ globalThis.fetch=async(url,options)=>{
+  calls++;assert.equal(new URL(url).pathname,`/v1/audio-features/${trackId}`);
+  assert.equal(options.headers.Authorization,'Bearer old-token');
+  return ok({id:trackId,tempo:118.23,time_signature:4});
+ };
+ assert.deepEqual(await s.audioFeatures(trackId),{tempo:118.23,timeSignature:4});
+ assert.deepEqual(await s.audioFeatures(trackId),{tempo:118.23,timeSignature:4});assert.equal(calls,1);
+});
+test('audio features reject malformed metadata and do not cache it',async()=>{
+ const s=await setup(),trackId='3'.repeat(22);let calls=0;
+ globalThis.fetch=async()=>{calls++;return ok(calls===1?{id:trackId,tempo:0,time_signature:8}:{id:trackId,tempo:90,time_signature:3});};
+ await assert.rejects(s.audioFeatures(trackId),/invalid tempo or time-signature/);
+ assert.deepEqual(await s.audioFeatures(trackId),{tempo:90,timeSignature:3});assert.equal(calls,2);
+ await assert.rejects(s.audioFeatures('bad'),/track ID is invalid/);
+});
 test('connect uses the configured client ID and exact redirect without a setup form',async()=>{
  const s=await setup();await s.connect();const auth=new URL(location.assigned);
  assert.equal(auth.searchParams.get('client_id'),'283d3d54be16465ca3d51e898f78c037');

@@ -4,6 +4,7 @@ const key='score-sing-spotify',pendingKey='score-sing-pkce';
 const validId=id=>typeof id==='string'&&/^[a-f0-9]{32}$/i.test(id);
 let generation=0,refreshing=null,reading=null,retryAt=0;
 const requests=new Set();
+const featureCache=new Map();
 const cancelled=()=>new DOMException('Spotify connection changed. Start again.','AbortError');
 function saved(){
  try{
@@ -43,7 +44,7 @@ const encode=bytes=>btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').repla
 export function isConnected(){return !!saved();}
 export function disconnect(){
  generation++;for(const request of requests)request.abort();requests.clear();refreshing=null;reading=null;
- sessionStorage.removeItem(key);sessionStorage.removeItem(pendingKey);
+ featureCache.clear();sessionStorage.removeItem(key);sessionStorage.removeItem(pendingKey);
 }
 // Spotify's login refuses to load in a frame, so an embedded app signs in through a pop-up.
 const POPUP_STATE='p.',CALLBACK_MESSAGE='score-sing-spotify-callback';
@@ -135,4 +136,19 @@ export function playback(){
  })();reading=pending;
  pending.finally(()=>{if(reading===pending)reading=null;}).catch(()=>{});
  return pending;
+}
+
+export async function audioFeatures(trackId){
+ if(typeof trackId!=='string'||!/^[A-Za-z0-9]{22}$/.test(trackId))throw Error('Spotify track ID is invalid');
+ const cached=featureCache.get(trackId);if(cached)return cached;
+ const signal=AbortSignal.timeout(6000);
+ const pending=(async()=>{
+  const access=await token(signal);
+  const data=await request(`https://api.spotify.com/v1/audio-features/${trackId}`,{signal,headers:{Authorization:'Bearer '+access}});
+  if(!data||data.id!==trackId||!Number.isFinite(data.tempo)||data.tempo<20||data.tempo>300||!Number.isInteger(data.time_signature)||data.time_signature<3||data.time_signature>7)throw Error('Spotify returned invalid tempo or time-signature metadata');
+  return {tempo:data.tempo,timeSignature:data.time_signature};
+ })();
+ if(featureCache.size>=50)featureCache.delete(featureCache.keys().next().value);
+ featureCache.set(trackId,pending);
+ try{return await pending;}catch(error){if(featureCache.get(trackId)===pending)featureCache.delete(trackId);throw error;}
 }

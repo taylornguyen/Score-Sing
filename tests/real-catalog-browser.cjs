@@ -21,6 +21,7 @@ try{
   await context.addInitScript(()=>sessionStorage.setItem('score-sing-spotify',JSON.stringify({access_token:'test-token',clientId:'a'.repeat(32),expiresAt:Date.now()+3600000})));
   await context.route('**/auth.js',r=>r.fulfill({contentType:'text/javascript',body:authScript(`'real${index}'`)}));
   await context.route('https://api.spotify.com/v1/me/player/currently-playing',r=>r.fulfill({json:{currently_playing_type:'track',progress_ms:60000,is_playing:true,item:{id:trackId,name,artists:[{name:artist}],duration_ms}}}));
+  await context.route('https://api.spotify.com/v1/audio-features/**',r=>r.fulfill({json:{id:trackId,tempo:96.25,time_signature:4}}));
   await context.route('https://score-sing.test/**',async r=>{
    const u=new URL(r.request().url());const file=path.join(process.cwd(),'frontend',u.pathname==='/'?'index.html':u.pathname);
    try{const body=await fs.readFile(file);await r.fulfill({body,contentType:types[path.extname(file)]||'text/plain'});}catch{await r.fulfill({status:404});}
@@ -34,7 +35,7 @@ try{
   });
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
   await page.goto('https://score-sing.test/');
-  await page.waitForFunction(()=>/(Found automatically · (timed from lyrics|.*tempo estimate)|Words only · .* · timed from lyrics)$/.test(document.querySelector('#score-subtitle').textContent),null,{timeout:60000}).catch(()=>{});
+  await page.waitForFunction(()=>/(Found automatically · (timed from lyrics|Spotify estimate \d+ BPM · \d\/4)|Words only · .* · timed from lyrics)$/.test(document.querySelector('#score-subtitle').textContent),null,{timeout:60000}).catch(()=>{});
   const row={song:name,score:await page.locator('#score-title').textContent(),subtitle:await page.locator('#score-subtitle').textContent(),state:await page.locator('#sync-state').textContent(),syllable:await page.locator('#current-syllable').textContent()};
   if(process.env.SHOTS)await page.screenshot({path:path.join(process.env.SHOTS,index+'.png')});
   results.push(row);console.log(JSON.stringify(row));

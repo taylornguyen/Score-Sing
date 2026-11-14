@@ -31,6 +31,7 @@ try{
  await context.route('**/auth.js',r=>r.fulfill({contentType:'text/javascript',body:authScript("'singer'")}));
  await context.route('https://api.spotify.com/v1/me/player/currently-playing',r=>r.fulfill({json:{currently_playing_type:'track',progress_ms:progress(),is_playing:true,
   item:{id:trackId,name:tracks[trackId].name,artists:[{name:tracks[trackId].artist}],album:{name:'Hymns'},duration_ms:120000}}}));
+ await context.route('https://api.spotify.com/v1/audio-features/**',r=>r.fulfill({json:{id:new URL(r.request().url()).pathname.split('/').pop(),tempo:96.25,time_signature:3}}));
  await context.route('https://score-sing.test/**',async r=>{
   const u=new URL(r.request().url());const file=path.join(process.cwd(),'frontend',u.pathname==='/'?'index.html':u.pathname);
   try{const body=await fs.readFile(file);await r.fulfill({body,contentType:types[path.extname(file)]||'text/plain'});}catch{await r.fulfill({status:404});}
@@ -84,7 +85,10 @@ try{
  trackId=NO_LYRICS;
  await page.waitForFunction(()=>document.querySelector('#score-title').textContent==='Quiet Hymn',null,{timeout:15000});
  await state('Following · tempo-based');
- assert.equal(await text('#score-subtitle'),'Hymn Singers · Found automatically · No synced lyrics for this recording: timing is a tempo estimate');
+ assert.equal(await text('#score-subtitle'),'Hymn Singers · Found automatically · Spotify estimate 96 BPM · 3/4');
+ const estimate=()=>library.sql(`SELECT count(*)||'|'||string_agg(title||':'||(alignment->'catalog'->>'tempo')||':'||(alignment->'catalog'->>'timeSignature'),',') FROM library_scores WHERE subject='singer' AND track_id='${NO_LYRICS}'`);
+ for(let i=0;i<50&&estimate()!=='1|Quiet Hymn:96.25:3';i++)await new Promise(r=>setTimeout(r,100));
+ assert.equal(estimate(),'1|Quiet Hymn:96.25:3','Spotify tempo and meter estimates are saved with the score');
  assert.equal(await text('#next-match'),'Try another (2/2)','an unsupported score was skipped');
  assert.match(await text('#note-position'),/ \/ 3[4-9]$/,'the repeated first measure is played twice');
 

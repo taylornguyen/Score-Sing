@@ -113,7 +113,18 @@ async function autoScore(track,rank,current,screen=false){
   const aligned=autoAlign(entries,lyrics.lines);
   if(score!==loaded)return;
   score.checkpoints=aligned.checkpoints;score.cues=interpolateCues(entryTimes,aligned.checkpoints);score.checkpointsDirty=false;catalog.timing='lyrics';
- }catch(e){if(score!==loaded)return;catalog.timing='tempo';catalog.timingNote=e.message.slice(0,300);}
+ }catch(e){
+  if(score!==loaded)return;catalog.timing='tempo';catalog.timingNote=e.message.slice(0,220);
+  try{
+   const features=await spotify.audioFeatures(track.id);
+   if(!current()||score!==loaded)return;
+   score.bpm=features.tempo;catalog.tempo=features.tempo;catalog.timeSignature=features.timeSignature;
+   $('#bpm').value=features.tempo;
+  }catch(featureError){
+   if(!current()||score!==loaded)return;
+   catalog.timingNote=`${catalog.timingNote}; Spotify metadata unavailable (${featureError.message})`.slice(0,300);
+  }
+ }
  save();alignmentControls();resetCursor();updateFollow();showAutoScore();
 }
 // No notated score: show the recording's words on a timed line so the singer can still follow along.
@@ -211,7 +222,8 @@ function showAutoScore(){
  }
  if(!auto)return;
  $('#next-match').textContent=`Try another (${auto.rank+1}/${auto.count})`;
- $('#score-subtitle').textContent=[auto.credit,auto.timing==='lyrics'?'Found automatically · timed from lyrics':auto.timing==='tempo'?`Found automatically · ${auto.timingNote}: timing is a tempo estimate`:'Found automatically · timing…'].filter(Boolean).join(' · ');
+ const estimate=Number.isFinite(auto.tempo)&&Number.isInteger(auto.timeSignature)?`Spotify estimate ${Math.round(auto.tempo)} BPM · ${auto.timeSignature}/4`:`${auto.timingNote}: timing is a tempo estimate`;
+ $('#score-subtitle').textContent=[auto.credit,auto.timing==='lyrics'?'Found automatically · timed from lyrics':auto.timing==='tempo'?`Found automatically · ${estimate}`:'Found automatically · timing…'].filter(Boolean).join(' · ');
 }
 function lookupState(){
  const s=trackLookup?.trackId===snapshot?.item?.id?trackLookup.state:'',kept=score&&!score.preview;
