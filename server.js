@@ -1,6 +1,8 @@
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {randomBytes} from 'node:crypto';
+import {isIP} from 'node:net';
 import {fileURLToPath} from 'node:url';
 import {verifier,issueToken,passwordMatches} from './lib/auth.js';
 import {createVerificationStore} from './lib/verification.js';
@@ -11,10 +13,20 @@ import {createCatalog,createCatalogHandler} from './lib/catalog.js';
 import {createExportHandler} from './lib/exports.js';
 const root=path.join(path.dirname(fileURLToPath(import.meta.url)),'frontend');
 const version=(await fs.readFile(path.join(root,'..','VERSION'),'utf8')).trim();
-const loginPassword=process.env.SCORE_SING_LOGIN_PASSWORD||'';
-const authSecret=process.env.SCORE_SING_AUTH_SECRET||'';
-if(loginPassword.length<16)throw Error('Set SCORE_SING_LOGIN_PASSWORD to an access code of at least 16 characters');
-if(authSecret.length<32)throw Error('Set SCORE_SING_AUTH_SECRET to at least 32 characters');
+const port=Number(process.env.PORT||8080),host=process.env.HOST||'127.0.0.1';
+const bindAddress=host.replace(/^\[|\]$/g,'').toLowerCase();
+const loopback=bindAddress==='localhost'||bindAddress==='::1'||(isIP(bindAddress)===4&&bindAddress.startsWith('127.'));
+let loginPassword=process.env.SCORE_SING_LOGIN_PASSWORD||'';
+let authSecret=process.env.SCORE_SING_AUTH_SECRET||'';
+const localCredentials=!loginPassword&&!authSecret&&loopback&&process.env.NODE_ENV!=='production';
+if(localCredentials){
+ loginPassword=randomBytes(24).toString('base64url');
+ authSecret=randomBytes(48).toString('base64url');
+ console.log(`Local access code (this run only): ${loginPassword}`);
+}else{
+ if(loginPassword.length<16)throw Error('Set SCORE_SING_LOGIN_PASSWORD to an access code of at least 16 characters');
+ if(authSecret.length<32)throw Error('Set SCORE_SING_AUTH_SECRET to at least 32 characters');
+}
 const verify=verifier({secret:authSecret}),observations=createVerificationStore(),database=createDatabase();
 const library=createLibraryHandler({verify,store:createLibraryStore(database)});
 const catalog=createCatalog(),catalogRoutes=createCatalogHandler({verify,catalog}),exportRoutes=createExportHandler();
@@ -72,5 +84,4 @@ const server=http.createServer(async(req,res)=>{
 });
 // Phone uploads of a 5 MB score need longer than ordinary API calls; each body read has its own deadline.
 server.requestTimeout=60000;server.headersTimeout=10000;
-const port=Number(process.env.PORT||8080),host=process.env.HOST||'127.0.0.1';
 server.listen(port,host,()=>console.log(`Score Sing ${version} listening on http://${host}:${server.address().port}`));

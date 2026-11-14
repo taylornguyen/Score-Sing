@@ -17,7 +17,7 @@ A private web companion for Spotify, for Windows desktop and iPhone. While a son
 ## Run and test
 
 See README.md, "Local development" and "Verification".
-- Short version: `npm ci`, then `PORT=8080 node server.js`; in PowerShell, `$env:PORT=8080; node server.js`.
+- Short version: `npm ci`, then `npm start`; on Windows, double-click `Start Score Sing.bat`. Local loopback startup generates and prints an access code; no credentials or secrets need to be configured.
 - `npm test` runs about 78 unit tests.
 - Browser checks are `node tests/<name>-browser.cjs` with Playwright's Chromium installed. Run them one at a time; running several in parallel causes timeouts.
 
@@ -48,7 +48,7 @@ Plain ES modules with no build step and no framework. The style is dense: short 
 
 ## Accounts and outside services
 
-- **Sign-in:** set `SCORE_SING_LOGIN_PASSWORD` to an access code of at least 16 characters. In production, also set a stable random `SCORE_SING_AUTH_SECRET` of at least 32 characters and serve behind HTTPS. All sessions use the shared `score-sing-owner` account.
+- **Sign-in:** local non-production loopback runs generate an access code and signing secret at startup. Production and non-loopback deployments must set `SCORE_SING_LOGIN_PASSWORD` (at least 16 characters) and a stable random `SCORE_SING_AUTH_SECRET` (at least 32 characters), and serve behind HTTPS. All sessions use the shared `score-sing-owner` account.
 - **Spotify:** your developer app. For local use, add the redirect URI `http://127.0.0.1:<port>/callback.html`. Never put the client secret in this app; it uses PKCE and needs none.
 - **LRCLIB** (lrclib.net) is called from the browser with song details only. Rapid batches get rate-limited (HTTP 429).
 - **Catalog:** download `score-catalog.tar` from the export, unpack it, and set `SCORE_SING_CATALOG_DIR`. The default path is a Linux path on the old server.

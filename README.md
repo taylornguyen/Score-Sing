@@ -4,7 +4,7 @@ A private, responsive sheet-music companion. Spotify continues playback in its o
 
 ## Connect
 
-Sign in with the private access code configured on the server (`SCORE_SING_LOGIN_PASSWORD`, at least 16 characters). The server issues an eight-hour signed session token. Set `SCORE_SING_AUTH_SECRET` to a stable random value of at least 32 characters; changing it invalidates active sessions. There is one shared Score Sing account, not per-person accounts. Sign-in is handled by this app and does not contact an external identity provider.
+For local development, sign in with the random access code printed in the server console at startup. It is generated anew for each non-production run bound to loopback; the matching signing secret stays in memory, and restarting the server invalidates sessions and generates a new code. No username, password, or secret setup is needed. Production and non-loopback deployments still require `SCORE_SING_LOGIN_PASSWORD` (at least 16 characters) and a stable `SCORE_SING_AUTH_SECRET` (at least 32 characters). There is one shared Score Sing account, not per-person accounts. Sign-in is handled by this app and does not contact an external identity provider.
 
 Connect Spotify through the configured developer application. Its Spotify dashboard must list the deployment's `/callback.html` URL (for local development, `http://127.0.0.1:8080/callback.html`). The operator's public Spotify developer client ID (`283d3d54be16465ca3d51e898f78c037`) is configured in `frontend/spotify.js`; Connect Spotify goes straight to authorization. Spotify authorization uses PKCE/S256 and a single-use state verifier with a ten-minute deadline. OAuth tokens remain in tab-scoped sessionStorage, refresh with a bounded request, and clear on disconnect/sign-out. The sole Spotify scope is `user-read-currently-playing`. Each device authorizes separately.
 
@@ -43,14 +43,11 @@ Moving to another computer: see [docs/migration.md](docs/migration.md). Resuming
 
 ## Local development
 
-Needs Node.js 24 or newer and Git.
+Needs Node.js 24 or newer and Git. On Windows, double-click `Start Score Sing.bat`; it installs dependencies on first run, starts the server, and prints the sign-in code and URL in its console. Open the URL in a browser. On other platforms, run `npm ci` once, then `npm start`. No environment variables or database secrets are required; without PostgreSQL, scores are saved in that browser.
 
-1. `npm ci`
-2. Optional, for automatic scores: unpack the score catalog anywhere and set `SCORE_SING_CATALOG_DIR` to its `catalog/` folder. Without it the app runs and `/api/health` reports the catalog as unavailable.
-3. Set `SCORE_SING_LOGIN_PASSWORD` to a private access code of at least 16 characters and `SCORE_SING_AUTH_SECRET` to a stable random secret of at least 32 characters. In PowerShell: `$env:SCORE_SING_LOGIN_PASSWORD='replace-with-a-private-access-code'; $env:SCORE_SING_AUTH_SECRET='replace-with-a-random-secret-of-32-or-more-characters'`.
-4. Start: `PORT=8080 node server.js` (PowerShell: `$env:PORT=8080; node server.js`), then open `http://127.0.0.1:8080/`.
-5. Spotify: add `http://127.0.0.1:8080/callback.html` as a redirect URI in the Spotify developer app; Spotify allows loopback `http` addresses.
-6. `npm test` runs the unit tests; the browser checks below need `npx playwright install chromium`.
+For automatic scores, optionally unpack the catalog and set `SCORE_SING_CATALOG_DIR` to its `catalog/` folder. Without it, the app still runs and `/api/health` reports the catalog as unavailable.
+
+Spotify's developer app must list `http://127.0.0.1:8080/callback.html` as a redirect URI; Spotify allows loopback `http` addresses. `npm test` runs the unit tests; the browser checks below need `npx playwright install chromium`.
 
 The score library needs PostgreSQL (`lib/db.js`); without it saves stay in the browser, as on the live app.
 
