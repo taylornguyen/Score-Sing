@@ -12,6 +12,8 @@ Connect Spotify through the configured developer application. Its Spotify dashbo
 
 Open a compressed `.mxl` or uncompressed `.musicxml`/`.xml` partwise vocal score (up to 5 MB); repeats and jumps are unfolded into performed order. Bind it explicitly to the currently playing recording using Align score. Tempo-based following uses the specified BPM and the time in seconds of the score's first note. It is an approximation; adjust for the actual recording. Tempo changes and rubato require recording-specific cues.
 
+Use **MusicXML** to download the current score as an uncompressed `.musicxml` file. **PDF** opens the browser print dialog; choose **Save as PDF** to download a printable copy.
+
 Use Align score to bind the current recording, choose the first and last score positions, and mark their actual playback times. Add intermediate checkpoints where timing changes. Apply interpolates timing between those marks; it does not automatically detect the recording’s tempo variations. Draft checkpoints remain separate from applied timing. Export saves a portable timed-score package.
 
 For pre-authored recording-specific alignment, Open score also accepts a JSON timed-score package:
@@ -57,7 +59,8 @@ The score library needs PostgreSQL (`lib/db.js`); without it saves stay in the b
 - `PLAYWRIGHT_BROWSERS_PATH=<dir> node tests/library-browser.cjs`: migration, cross-device sync, song auto-switch, account isolation and storage outage, against the real library handler and PostgreSQL.
 - `PLAYWRIGHT_BROWSERS_PATH=<writable browser directory> node tests/pitch-browser.cjs`: on-device mic pitch reads in tune, octave-folded, sharp, flat and silence against the current note; denial is reported; the microphone stops on toggle off and sign-out.
 - `PLAYWRIGHT_BROWSERS_PATH=<writable browser directory> node tests/stage-browser.cjs`: floating score window (real Document Picture-in-Picture in Chromium) follows, returns and closes; wake lock is held only while following and released on pause or disconnect.
-- `PLAYWRIGHT_BROWSERS_PATH=<writable browser directory> node tests/browser.cjs`: real score rendering, dark/light/phone layouts, deterministic Spotify fixtures for seek/pause/track changes, recording-specific cue import, malformed import and OAuth state rejection.
+- `PLAYWRIGHT_BROWSERS_PATH=<writable browser directory> node tests/browser.cjs`: real score rendering, PDF print/save and MusicXML download, dark/light/phone layouts, deterministic Spotify fixtures for seek/pause/track changes, recording-specific cue import, malformed import and OAuth state rejection.
+- `node tests/score-download-browser.cjs`: end-to-end MusicXML download and PDF printing without requiring PostgreSQL.
 - `PLAYWRIGHT_BROWSERS_PATH=<dir> node tests/auto-score-browser.cjs`: catalog score found, a wrong-lyrics candidate skipped, timed from lyrics, saved and replaced by Try another; validated Spotify tempo and meter fallback without lyrics; words-only score; Learn notes from a synthetic shared-audio singer, kept across reopen, corrupt stored notes reported; no match; saved score reopens without searching.
 - `node scripts/melody-benchmark.mjs <data dir> --fetch` (then without `--fetch`; `SAR=-5|0|5` sets the voice level): Learn notes accuracy on 63 real MIR-1K karaoke clips with hand-labeled pitch.
 - `SCORE_SING_CATALOG_DIR=<catalog> PLAYWRIGHT_BROWSERS_PATH=<dir> node tests/real-catalog-browser.cjs`: real catalog scores and live LRCLIB lyrics for popular songs and two *From Zero* tracks (needs the installed catalog and network; `SONGS=a,b` limits it).

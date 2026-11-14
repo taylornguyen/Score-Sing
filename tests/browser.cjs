@@ -26,6 +26,16 @@ for(const [name,width,height,theme] of [['desktop',1440,1000,'dark'],['iphone',3
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no horizontal overflow');
  await page.screenshot({path:`tests/${name}.png`,fullPage:true});
  if(name==='desktop'){
+  const musicxmlDownload=page.waitForEvent('download');await page.click('#download-musicxml');
+  const xmlFile=await musicxmlDownload,xml=await fs.readFile(await xmlFile.path(),'utf8');
+  assert.equal(xmlFile.suggestedFilename(),'Ode-to-Joy.musicxml');
+  assert.match(xml,/^<\?xml version="1\.0" encoding="UTF-8"\?><score-partwise/);
+  await page.evaluate(()=>window.print=()=>{window.__printRequested=true;});
+  await page.click('#download-pdf');assert.equal(await page.evaluate(()=>window.__printRequested),true);
+  await page.emulateMedia({media:'print'});
+  const pdf=await page.pdf({printBackground:true});
+  assert.equal(pdf.subarray(0,5).toString(),'%PDF-');assert.ok(pdf.length>1000,'print stylesheet produces a score PDF');
+  await page.emulateMedia({media:'screen'});
   await page.evaluate(()=>sessionStorage.setItem('score-sing-spotify',JSON.stringify({access_token:'test-token',clientId:'a'.repeat(32),expiresAt:Date.now()+3600000})));
   await page.reload();await page.waitForSelector('#score svg');await page.waitForFunction(()=>document.querySelector('#track-title').textContent==='Test recording');
   await page.setInputFiles('#score-file','frontend/sample.musicxml');await page.waitForFunction(()=>!document.querySelector('#score-file').disabled);

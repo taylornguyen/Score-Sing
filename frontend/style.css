@@ -5,3 +5,20 @@
 body.floating{padding:10px;overflow:auto}body.floating .score-layout{display:flex;flex-direction:column;align-items:stretch;gap:8px}body.floating .note-panel{position:sticky;top:0;z-index:1;order:-1;display:flex;align-items:center;gap:14px;padding:6px 4px;background:var(--bg)}body.floating .note-panel>.eyebrow,body.floating .note-rule,body.floating .paper-footer{display:none}body.floating #current-note{font-size:32px;margin:0;min-width:45px}body.floating #current-syllable{font-size:20px}body.floating #note-position{margin-left:auto;font-size:10px}body.floating .paper{min-height:0;padding:12px 6px}
 @media(max-width:700px){#float{display:none}}
 .auto.follow-page{margin-left:0}#pitch-reading{margin-top:8px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--muted)}#pitch-reading[data-state=in-tune]{color:var(--good)}#pitch-reading[data-state=sharp],#pitch-reading[data-state=flat]{color:var(--accent)}@media(max-width:700px){#pitch-reading{margin-top:0;font-size:12px}}
+@media print{
+ @page{margin:12mm}
+ html,body,#signed-in{background:#fff!important;color:#000!important}
+ body{margin:0}
+ #signed-in>header,.transport,.score-toolbar .tools,#alignment,.follow-strip,#error,.note-panel,.paper-footer{display:none!important}
+ .workspace{max-width:none;margin:0;padding:0}
+ .score-toolbar{display:block;padding:0 0 8mm}
+ .score-toolbar h2{color:#000;font-size:20pt}
+ #score-subtitle{color:#333!important}
+ .score-layout{display:block}
+ .paper{min-height:0;padding:0;border:0;border-radius:0;overflow:visible;box-shadow:none;background:#fff;color:#000}
+ #score{min-height:0}
+ #score [id^="osmdCanvasPage"]{width:100%!important;height:auto!important;break-after:page;page-break-after:always}
+ #score [id^="osmdCanvasPage"]:last-of-type{break-after:auto;page-break-after:auto}
+ #score svg{display:block;width:100%!important;height:auto!important;max-width:100%}
+}
+@media(max-width:700px){.score-toolbar .tools{flex-wrap:wrap}.score-toolbar .tools>*{flex:1 1 40%;min-width:0;white-space:normal}}

@@ -25,6 +25,17 @@ const observation=createReporter(async(payload,signal)=>{
 });
 const error=msg=>{$('#error').textContent=msg||'';$('#error').hidden=!msg;};
 const state=msg=>{$('#sync-state').textContent=msg;};
+function updateDownloadButtons(){
+ const disabled=loading||!score?.xml||!$('#score svg');
+ $('#download-pdf').disabled=disabled;$('#download-musicxml').disabled=disabled;
+}
+function scoreFileName(extension){
+ const title=(score?.title||$('#score-title').textContent||'score').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80)||'score';
+ return `${title}.${extension}`;
+}
+function download(blob,name){
+ const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
 function rerender(){if(renderer){renderer.render();cursorIndex=-1;updateFollow();}}
 let pitchTargets=[];
 const NOTE_NAMES=['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'],noteName=midi=>NOTE_NAMES[((midi%12)+12)%12]+(Math.floor(midi/12)-1);
@@ -320,6 +331,7 @@ async function loadScore(next,generation=++renderGeneration){
   clearTimeout(deadline);
   if(renderer!==fresh){fresh?.clear();host?.remove();}
   if(generation===renderGeneration){$('#score-file').disabled=false;loading=false;updateFollow();}
+   if(generation===renderGeneration)updateDownloadButtons();
  }
 }
 
@@ -418,9 +430,19 @@ handler('#checkpoint-apply',()=>{
 });
 handler('#alignment-export',()=>{
  if(!score?.cues||loading)throw Error('Apply recording checkpoints before exporting');
- const blob=new Blob([JSON.stringify({schemaVersion:1,title:score.title,spotifyTrackId:score.trackId,musicxml:score.xml,cues:score.cues,checkpoints:score.checkpointsDirty?[]:(score.checkpoints||[])},null,2)],{type:'application/json'});
- const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='score-sing-timed-score.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ download(new Blob([JSON.stringify({schemaVersion:1,title:score.title,spotifyTrackId:score.trackId,musicxml:score.xml,cues:score.cues,checkpoints:score.checkpointsDirty?[]:(score.checkpoints||[])},null,2)],{type:'application/json'}),'score-sing-timed-score.json');
 });
+handler('#download-musicxml',()=>{
+ if(loading||!score?.xml)throw Error('Open a score before downloading MusicXML');
+ download(new Blob([score.xml],{type:'application/vnd.recordare.musicxml+xml;charset=utf-8'}),scoreFileName('musicxml'));
+});
+handler('#download-pdf',()=>{
+ if(loading||!score?.xml||!$('#score svg'))throw Error('Open a score before printing');
+ if(stage.floating())stage.close();
+ window.print();
+});
+addEventListener('beforeprint',()=>renderer?.cursor.hide());
+addEventListener('afterprint',()=>{if(cursorIndex>=0)displayPosition(cursorIndex);});
 $('#score-file').addEventListener('change',async e=>{
  const file=e.target.files[0];if(!file||!subject)return;
  const generation=++renderGeneration;$('#score-file').disabled=true;loading=true;
