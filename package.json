@@ -1,6 +1,6 @@
 {
   "name": "score-sing",
-  "version": "0.13.1",
+  "version": "0.13.2",
   "description": "Spotify sheet music companion",
   "main": "server.js",
   "scripts": {

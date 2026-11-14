@@ -1,7 +1,7 @@
-// Browser fixtures: AuthReturn stand-in plus the real library handler on a private PostgreSQL cluster.
+// Browser fixtures: local sign-in stand-in plus the real library handler on a private PostgreSQL cluster.
 const http=require('node:http');
 // The fixture "token" is the subject itself; the real handler still rejects requests without one.
-exports.authScript=subjectExpression=>`window.AuthReturn={init(o){window.fixtureAuth=o;document.querySelector(o.showWhenLoggedIn).hidden=false;setTimeout(o.onLogin,0);return {fetchWithAuth:async(url,options={})=>{const subject=${subjectExpression};if(url==='/api/session')return {ok:true,json:async()=>({subject})};return fetch(url,{...options,headers:{...(options.headers||{}),Authorization:'Bearer '+subject}});}}}};`;
+exports.authScript=subjectExpression=>`window.ScoreSignIn={init(o){window.fixtureAuth=o;document.querySelector(o.showWhenLoggedIn).hidden=false;setTimeout(o.onLogin,0);return {fetchWithAuth:async(url,options={})=>{const subject=${subjectExpression};if(url==='/api/session')return {ok:true,json:async()=>({subject})};return fetch(url,{...options,headers:{...(options.headers||{}),Authorization:'Bearer '+subject}});}}}};`;
 exports.startLibrary=async()=>{
  const {postgresAvailable,startPostgres}=await import('./pg-fixture.js');
  if(!postgresAvailable)throw Error('Browser library checks need PostgreSQL binaries (initdb) on this machine');

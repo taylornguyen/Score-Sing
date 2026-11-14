@@ -28,7 +28,7 @@ try{
   for(let h=1;h<=8;h++)tone(440*h,0.12*0.7**(h-1));tone(98,0.2);
   window.sharedAudio=out.stream;return out.stream;
  };});
- await context.route('https://authreturn.com/static/auth_component.js',r=>r.fulfill({contentType:'text/javascript',body:authScript("'singer'")}));
+ await context.route('**/auth.js',r=>r.fulfill({contentType:'text/javascript',body:authScript("'singer'")}));
  await context.route('https://api.spotify.com/v1/me/player/currently-playing',r=>r.fulfill({json:{currently_playing_type:'track',progress_ms:progress(),is_playing:true,
   item:{id:trackId,name:tracks[trackId].name,artists:[{name:tracks[trackId].artist}],album:{name:'Hymns'},duration_ms:120000}}}));
  await context.route('https://score-sing.test/**',async r=>{

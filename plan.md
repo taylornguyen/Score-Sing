@@ -10,7 +10,7 @@ The exciting outcome is opening a Spotify song, finding or importing the matchin
 
 ## Product budget
 
-One working surface: Spotify now-playing state, sheet music with lyrics when supplied, current note, essential connection/import/alignment controls. No extra dashboard, tutorial, marketing, unrelated tabs or audio player. Keep AuthReturn sign-in and private verification. Keep saved scores/drafts safe. Reuse OSMD, existing parsers and Spotify PKCE flow. Existing preview is public-domain sheet music and silent.
+One working surface: Spotify now-playing state, sheet music with lyrics when supplied, current note, essential connection/import/alignment controls. No extra dashboard, tutorial, marketing, unrelated tabs or audio player. Keep private local access-code sign-in and server-side verification. Keep saved scores/drafts safe. Reuse OSMD, existing parsers and Spotify PKCE flow. Existing preview is public-domain sheet music and silent.
 
 ## Roadmap and parallel workstreams
 

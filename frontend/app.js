@@ -453,8 +453,8 @@ async function signedIn(){
  }catch(e){if(epoch===authGeneration){$('#auth-error').textContent=e.message;error(e.message);}}
 }
 document.addEventListener('DOMContentLoaded',()=>{
- if(!window.AuthReturn){$('#signed-out').hidden=false;$('#auth-error').textContent='Sign-in service could not load. Reload to try again.';return;}
- auth=AuthReturn.init({appId:'score-sing',theme:matchMedia('(prefers-color-scheme:light)').matches?'light':'dark',headerEl:'#auth-area',landingButtonsEl:'#auth-buttons',showWhenLoggedIn:'#signed-in',showWhenLoggedOut:'#signed-out',onLogin:()=>setTimeout(signedIn,0),onLogout:()=>{stopLearning('',false);pitch.stop();stage.close();stage.awake(false);++authGeneration;++renderGeneration;library?.reset('');libraryError='';$('#score-library')?.remove();loading=false;$('#score-file').disabled=false;inspecting=false;disconnectSpotify();subject='';score=null;entries=[];entryTimes=[];renderer?.clear();renderer=null;$('#score').replaceChildren();resetCursor();}});
+ if(!window.ScoreSignIn){$('#signed-out').hidden=false;$('#auth-error').textContent='Sign-in interface could not load. Reload to try again.';return;}
+ auth=ScoreSignIn.init({headerEl:'#auth-area',landingButtonsEl:'#auth-buttons',showWhenLoggedIn:'#signed-in',showWhenLoggedOut:'#signed-out',onLogin:()=>setTimeout(signedIn,0),onLogout:()=>{stopLearning('',false);pitch.stop();stage.close();stage.awake(false);++authGeneration;++renderGeneration;library?.reset('');libraryError='';$('#score-library')?.remove();loading=false;$('#score-file').disabled=false;inspecting=false;disconnectSpotify();subject='';score=null;entries=[];entryTimes=[];renderer?.clear();renderer=null;$('#score').replaceChildren();resetCursor();}});
  window.auth=auth;library=createLibrary((url,options)=>auth.fetchWithAuth(url,options));
 });
 document.addEventListener('visibilitychange',()=>{if(stage.floating())return;if(document.hidden){pitch.stop();++pollGeneration;clearTimeout(pollTimer);snapshot=null;resetCursor();}else if(subject)poll();});

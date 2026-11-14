@@ -19,7 +19,7 @@ try{
   const context=await browser.newContext({viewport:{width:1280,height:900}});const errors=[];
   const trackId=String(index).repeat(22);
   await context.addInitScript(()=>sessionStorage.setItem('score-sing-spotify',JSON.stringify({access_token:'test-token',clientId:'a'.repeat(32),expiresAt:Date.now()+3600000})));
-  await context.route('https://authreturn.com/static/auth_component.js',r=>r.fulfill({contentType:'text/javascript',body:authScript(`'real${index}'`)}));
+  await context.route('**/auth.js',r=>r.fulfill({contentType:'text/javascript',body:authScript(`'real${index}'`)}));
   await context.route('https://api.spotify.com/v1/me/player/currently-playing',r=>r.fulfill({json:{currently_playing_type:'track',progress_ms:60000,is_playing:true,item:{id:trackId,name,artists:[{name:artist}],duration_ms}}}));
   await context.route('https://score-sing.test/**',async r=>{
    const u=new URL(r.request().url());const file=path.join(process.cwd(),'frontend',u.pathname==='/'?'index.html':u.pathname);

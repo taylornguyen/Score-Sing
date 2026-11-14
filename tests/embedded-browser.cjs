@@ -11,7 +11,7 @@ try{
  const context=await browser.newContext({viewport:{width:1280,height:900}});
  let tokenCalls=0;const errors=[];
  await context.route('https://chat.test/',r=>r.fulfill({contentType:'text/html',body:'<iframe id="app" src="https://score-sing.test/" style="width:1200px;height:850px" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>'}));
- await context.route('https://authreturn.com/static/auth_component.js',r=>r.fulfill({contentType:'text/javascript',body:authScript("'embedded'")}));
+ await context.route('**/auth.js',r=>r.fulfill({contentType:'text/javascript',body:authScript("'embedded'")}));
  // Stand-in for Spotify's consent: it returns the code to the registered callback.
  await context.route(/^https:\/\/accounts\.spotify\.com\/authorize/,r=>{
   const u=new URL(r.request().url());

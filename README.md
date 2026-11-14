@@ -4,11 +4,9 @@ A private, responsive sheet-music companion. Spotify continues playback in its o
 
 ## Connect
 
-Sign in through AuthReturn. Connect Spotify through the configured developer application. Its Spotify dashboard must list this exact redirect URI:
+Sign in with the private access code configured on the server (`SCORE_SING_LOGIN_PASSWORD`, at least 16 characters). The server issues an eight-hour signed session token. Set `SCORE_SING_AUTH_SECRET` to a stable random value of at least 32 characters; changing it invalidates active sessions. There is one shared Score Sing account, not per-person accounts. Sign-in is handled by this app and does not contact an external identity provider.
 
-`https://score-sing.multi.excessivecode.com/callback.html`
-
-The operator's public Spotify developer client ID (`283d3d54be16465ca3d51e898f78c037`) is configured in `frontend/spotify.js`; Connect Spotify goes straight to authorization. Spotify authorization uses PKCE/S256 and a single-use state verifier with a ten-minute deadline. OAuth tokens remain in tab-scoped sessionStorage, refresh with a bounded request, and clear on disconnect/sign-out. The sole Spotify scope is `user-read-currently-playing`. Development-mode account/allowlist requirements still apply. Each device authorizes separately.
+Connect Spotify through the configured developer application. Its Spotify dashboard must list the deployment's `/callback.html` URL (for local development, `http://127.0.0.1:8080/callback.html`). The operator's public Spotify developer client ID (`283d3d54be16465ca3d51e898f78c037`) is configured in `frontend/spotify.js`; Connect Spotify goes straight to authorization. Spotify authorization uses PKCE/S256 and a single-use state verifier with a ten-minute deadline. OAuth tokens remain in tab-scoped sessionStorage, refresh with a bounded request, and clear on disconnect/sign-out. The sole Spotify scope is `user-read-currently-playing`. Each device authorizes separately.
 
 ## Scores and timing
 
@@ -49,9 +47,9 @@ Needs Node.js 24 or newer and Git.
 
 1. `npm ci`
 2. Optional, for automatic scores: unpack the score catalog anywhere and set `SCORE_SING_CATALOG_DIR` to its `catalog/` folder. Without it the app runs and `/api/health` reports the catalog as unavailable.
-3. Start: `PORT=8080 node server.js` (PowerShell: `$env:PORT=8080; node server.js`), then open `http://127.0.0.1:8080/`.
-4. Spotify: add `http://127.0.0.1:8080/callback.html` as a redirect URI in the Spotify developer app; Spotify allows loopback `http` addresses.
-5. Sign-in uses the hosted AuthReturn `score-sing` registration, which may not accept a local address; the server's API checks need a real Score Sing sign-in either way.
+3. Set `SCORE_SING_LOGIN_PASSWORD` to a private access code of at least 16 characters and `SCORE_SING_AUTH_SECRET` to a stable random secret of at least 32 characters. In PowerShell: `$env:SCORE_SING_LOGIN_PASSWORD='replace-with-a-private-access-code'; $env:SCORE_SING_AUTH_SECRET='replace-with-a-random-secret-of-32-or-more-characters'`.
+4. Start: `PORT=8080 node server.js` (PowerShell: `$env:PORT=8080; node server.js`), then open `http://127.0.0.1:8080/`.
+5. Spotify: add `http://127.0.0.1:8080/callback.html` as a redirect URI in the Spotify developer app; Spotify allows loopback `http` addresses.
 6. `npm test` runs the unit tests; the browser checks below need `npx playwright install chromium`.
 
 The score library needs PostgreSQL (`lib/db.js`); without it saves stay in the browser, as on the live app.
@@ -68,7 +66,7 @@ The score library needs PostgreSQL (`lib/db.js`); without it saves stay in the b
 - `SCORE_SING_CATALOG_DIR=<catalog> PLAYWRIGHT_BROWSERS_PATH=<dir> node tests/real-catalog-browser.cjs`: real catalog scores and live LRCLIB lyrics for popular songs and two *From Zero* tracks (needs the installed catalog and network; `SONGS=a,b` limits it).
 - `PLAYWRIGHT_BROWSERS_PATH=<writable browser directory> node tests/embedded-browser.cjs`: inside the chat's sandboxed app frame, Connect Spotify signs in through a pop-up (Spotify refuses frames) and playback follows in the frame.
 - `node server.js` is the deployed runtime, started only through the deployment helper.
-- `/api/health` is public; `/api/session` requires an app-scoped verified AuthReturn ID JWT.
+- `/api/health` is public; `/api/session` requires a valid Score Sing session JWT.
 
 ## Score library storage
 
@@ -88,6 +86,6 @@ Compressed scores follow the MusicXML container convention: META-INF/container.x
 
 ## Live-use verification
 
-`GET/POST /api/verification` requires the same app-scoped AuthReturn JWT as `/api/session`. The browser submits only a random per-view run ID and nondecreasing counters: fresh Spotify samples, following note advances, paused-state transitions, playhead discontinuities, track changes and safe cursor stops. No song identifiers/titles, score text, provider credentials, audio or device content is sent. Reports are transient, expire after 30 minutes, are scoped to the authenticated app subject and are bounded to 256 runs in memory. No database or new product surface is involved.
+`GET/POST /api/verification` requires the same Score Sing session JWT as `/api/session`. The browser submits only a random per-view run ID and nondecreasing counters: fresh Spotify samples, following note advances, paused-state transitions, playhead discontinuities, track changes and safe cursor stops. No song identifiers/titles, score text, provider credentials, audio or device content is sent. Reports are transient, expire after 30 minutes, are scoped to the authenticated app subject and are bounded to 256 runs in memory. No database or new product surface is involved.
 
 Following must have three fresh samples and three note advances over an observed interval; a complete check additionally needs a paused-state transition, playhead jump, song change and a safe stop in the same run. These are content-free browser observations, not hardware attestation or a claim that audio was audible. The factory's observer only reads this endpoint. Published-asset fixtures intercept the endpoint and never submit their synthetic Spotify states to the live store. GET does not create observations. A silent preview produces no reports.

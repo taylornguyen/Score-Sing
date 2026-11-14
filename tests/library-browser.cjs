@@ -11,7 +11,7 @@ const spotify={trackId:T1,progress:12000};
 async function open(name,{width,height,theme,subject='listener'}){
  const context=await browser.newContext({viewport:{width,height},colorScheme:theme});
  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await context.route('https://authreturn.com/static/auth_component.js',r=>r.fulfill({contentType:'text/javascript',body:authScript(`window.fixtureSubject||${JSON.stringify(subject)}`)}));
+ await context.route('**/auth.js',r=>r.fulfill({contentType:'text/javascript',body:authScript(`window.fixtureSubject||${JSON.stringify(subject)}`)}));
  await context.route('https://api.spotify.com/v1/me/player/currently-playing',r=>r.fulfill({json:{currently_playing_type:'track',progress_ms:spotify.progress,is_playing:true,item:{id:spotify.trackId,name:'Recording '+spotify.trackId[0],artists:[{name:'Fixture artist'}]}}}));
  await context.route('https://score-sing.test/**',async r=>{
   const u=new URL(r.request().url());const file=path.join(process.cwd(),'frontend',u.pathname==='/'?'index.html':u.pathname);

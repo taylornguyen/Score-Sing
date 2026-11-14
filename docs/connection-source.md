@@ -8,7 +8,7 @@ A supported Browser Driver session successfully navigated to `https://developer.
 
 Evidence run: https://browser-driver.aisloppy.com/runs/s_06c1fb6a4e2df858
 
-Human-only dependency: sign in to the owner's Spotify developer account and provide its application client ID, with `https://score-sing.multi.excessivecode.com/callback.html` registered. The public ID can be entered in the published Connect Spotify dialog. The account then approves the actual playback-read scope in Spotify. There is no need to supply a client secret to this application.
+Human-only dependency: sign in to the owner's Spotify developer account and provide its application client ID, with `https://<deployment-host>/callback.html` registered. The account then approves the actual playback-read scope in Spotify. There is no need to supply a client secret to this application.
 
 Current development-mode requirements are documented at https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide : Premium app owner, one new client ID per developer, five users (existing apps may be grandfathered). Older general app pages still describe a larger app count; use the migration guide for current new-app limits. A client ID or user OAuth grant is not claimed to establish the platform permission that the operator directed us to assume.
 

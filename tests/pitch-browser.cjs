@@ -18,7 +18,7 @@ for(const [name,width,height,theme] of [['desktop',1440,1000,'dark'],['iphone',3
  },name==='denied');
  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
  let progress=12000,playing=true,trackId='1'.repeat(22);
- await page.route('https://authreturn.com/static/auth_component.js',r=>r.fulfill({contentType:'text/javascript',body:`window.AuthReturn={init(o){window.fixtureAuth=o;document.querySelector(o.showWhenLoggedIn).hidden=false;setTimeout(o.onLogin,0);return {fetchWithAuth:async()=>({ok:true,json:async()=>({subject:'browser-fixture'})})}}};`}));
+ await page.route('**/auth.js',r=>r.fulfill({contentType:'text/javascript',body:`window.ScoreSignIn={init(o){window.fixtureAuth=o;document.querySelector(o.showWhenLoggedIn).hidden=false;setTimeout(o.onLogin,0);return {fetchWithAuth:async()=>({ok:true,json:async()=>({subject:'browser-fixture'})})}}};`}));
  await page.route('https://api.spotify.com/v1/me/player/currently-playing',r=>r.fulfill({json:{currently_playing_type:'track',progress_ms:progress,is_playing:playing,item:{id:trackId,name:'Test recording',artists:[{name:'Test artist'}]}}}));
  await context.route('https://score-sing.test/**',async r=>{
   const u=new URL(r.request().url());const file=path.join(process.cwd(),'frontend',u.pathname==='/'?'index.html':u.pathname);

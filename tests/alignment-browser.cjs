@@ -18,7 +18,7 @@ const {authScript,startLibrary}=require('./library-fixture.cjs');
   },{saved,key,subject});
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   let seconds=2,releasePreview;
-  await page.route('https://authreturn.com/static/auth_component.js',r=>r.fulfill({contentType:'text/javascript',body:authScript('window.fixtureSubject')}));
+  await page.route('**/auth.js',r=>r.fulfill({contentType:'text/javascript',body:authScript('window.fixtureSubject')}));
   await page.route('https://api.spotify.com/v1/me/player/currently-playing',r=>r.fulfill({json:{currently_playing_type:'track',progress_ms:seconds*1000,is_playing:false,item:{id:trackId,name:'Fixture recording',artists:[{name:'Fixture artist'}]}}}));
   await page.route('https://score-sing.test/**',async r=>{
    const url=new URL(r.request().url());

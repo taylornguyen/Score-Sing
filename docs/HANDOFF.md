@@ -1,6 +1,6 @@
 # Score Sing handoff for local development
 
-Written November 9, 2026 at version 0.13.1 (commit 664a92c). Live at https://score-sing.multi.excessivecode.com/.
+Written November 9, 2026 at version 0.13.1 (commit 664a92c). The code map and account notes below describe the current local sign-in.
 
 To have Claude Code load this file automatically, create `CLAUDE.md` in the repository root containing the line `@docs/HANDOFF.md`.
 
@@ -28,12 +28,13 @@ Plain ES modules with no build step and no framework. The style is dense: short 
 | Path | Role |
 |---|---|
 | `server.js` | Node `http` server: static `frontend/`, `/api/health`, `/api/session`, `/api/verification`, library, catalog and `/download/` routes |
-| `lib/auth.js` | Verifies AuthReturn (Cognito) ID tokens; config fetched from `authreturn.com/api/apps/score-sing/cognito` at startup |
+| `lib/auth.js` | Issues and verifies Score Sing's locally signed session JWTs |
 | `lib/catalog.js` | Catalog index search (`/api/catalog/match`) and score files (`/api/catalog/score/<id>`), signed-in only |
 | `lib/library.js`, `lib/db.js` | Score library API on PostgreSQL; the connection comes only from `/opt/secrets/score-sing.json` (no fallback) |
 | `lib/verification.js` | Content-free usage counters (no songs, tokens or audio) used to confirm real use |
 | `lib/exports.js` | Expiring `/download/<token>/<file>` links (used for this export) |
 | `frontend/app.js` | Main page: sign-in, polling, rendering (OpenSheetMusicDisplay), following, automatic scores, Learn notes |
+| `frontend/auth.js` | Local private access-code sign-in for the app's single shared account |
 | `frontend/spotify.js` | Spotify PKCE sign-in in a pop-up and playback polling. Public client ID `283d3d54…` belongs to your Spotify developer app |
 | `frontend/sync.js` | Playhead math, MusicXML validation, cue/checkpoint timing |
 | `frontend/unfold.js` | Rewrites repeats, voltas and D.C./D.S. into performed order |
@@ -47,7 +48,7 @@ Plain ES modules with no build step and no framework. The style is dense: short 
 
 ## Accounts and outside services
 
-- **Sign-in:** AuthReturn app `score-sing`, invite-only. Your account is an admin of it. It may not accept `http://127.0.0.1`, and this is untested. If it refuses, the page stays on the sign-in screen.
+- **Sign-in:** set `SCORE_SING_LOGIN_PASSWORD` to an access code of at least 16 characters. In production, also set a stable random `SCORE_SING_AUTH_SECRET` of at least 32 characters and serve behind HTTPS. All sessions use the shared `score-sing-owner` account.
 - **Spotify:** your developer app. For local use, add the redirect URI `http://127.0.0.1:<port>/callback.html`. Never put the client secret in this app; it uses PKCE and needs none.
 - **LRCLIB** (lrclib.net) is called from the browser with song details only. Rapid batches get rate-limited (HTTP 429).
 - **Catalog:** download `score-catalog.tar` from the export, unpack it, and set `SCORE_SING_CATALOG_DIR`. The default path is a Linux path on the old server.
@@ -84,7 +85,7 @@ Plain ES modules with no build step and no framework. The style is dense: short 
 
 ## Files that only mattered on the old server
 
-- `AGENTS.md`: Excessive Code agent policy (keep it for reference; Claude Code does not read it).
+- `AGENTS.md`: repository-specific development and security guidance.
 - `excessivecode.json`, `plan.md`, `goal.md`, `ledger.jsonl`: deployment manifest and factory records.
 - `INTEGRATION.md`: the November 9 Spotify feasibility notes.
 - Deployment there was a platform restart API; locally, just run `node server.js`.

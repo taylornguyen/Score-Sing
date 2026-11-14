@@ -2,7 +2,7 @@ import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {verifier} from './lib/auth.js';
+import {verifier,issueToken,passwordMatches} from './lib/auth.js';
 import {createVerificationStore} from './lib/verification.js';
 import {readJson} from './lib/http.js';
 import {createDatabase} from './lib/db.js';
@@ -11,18 +11,42 @@ import {createCatalog,createCatalogHandler} from './lib/catalog.js';
 import {createExportHandler} from './lib/exports.js';
 const root=path.join(path.dirname(fileURLToPath(import.meta.url)),'frontend');
 const version=(await fs.readFile(path.join(root,'..','VERSION'),'utf8')).trim();
-const response=await fetch('https://authreturn.com/api/apps/score-sing/cognito',{signal:AbortSignal.timeout(10000)});
-if(!response.ok)throw Error(`Auth configuration failed: ${response.status}`);
-const config=await response.json();
-if(!config.clientId||!config.userPoolId||!config.region)throw Error('Incomplete auth configuration');
-const verify=verifier(config),observations=createVerificationStore(),database=createDatabase();
+const loginPassword=process.env.SCORE_SING_LOGIN_PASSWORD||'';
+const authSecret=process.env.SCORE_SING_AUTH_SECRET||'';
+if(loginPassword.length<16)throw Error('Set SCORE_SING_LOGIN_PASSWORD to an access code of at least 16 characters');
+if(authSecret.length<32)throw Error('Set SCORE_SING_AUTH_SECRET to at least 32 characters');
+const verify=verifier({secret:authSecret}),observations=createVerificationStore(),database=createDatabase();
 const library=createLibraryHandler({verify,store:createLibraryStore(database)});
 const catalog=createCatalog(),catalogRoutes=createCatalogHandler({verify,catalog}),exportRoutes=createExportHandler();
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.json':'application/json'};
+const loginFailures=new Map(),loginWindow=15*60*1000,loginLimit=8,tokenLifetime=60*60*8;
+function failureFor(ip){
+ const now=Date.now(),failure=loginFailures.get(ip);
+ if(!failure||failure.until<=now){loginFailures.delete(ip);return null;}
+ return failure;
+}
+function recordFailure(ip){
+ const now=Date.now();
+ for(const [key,value] of loginFailures)if(value.until<=now)loginFailures.delete(key);
+ if(loginFailures.size>=1000&&!loginFailures.has(ip))loginFailures.delete(loginFailures.keys().next().value);
+ const previous=failureFor(ip),failure=previous||{count:0,until:now+loginWindow};
+ failure.count++;loginFailures.set(ip,failure);
+}
 const server=http.createServer(async(req,res)=>{
  const json=(status,body)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(body));};
  if(req.url==='/api/health')return json(200,{status:'ok',version,library:await database.health(),catalog:catalog.health()});
  const pathname=new URL(req.url,'http://localhost').pathname;
+ if(pathname==='/api/login'){
+  if(req.method!=='POST')return json(405,{error:'Use POST'});
+  let body;try{body=await readJson(req,{limit:1024,timeout:5000,label:'Login'});}catch(error){return json(error.status||400,{error:error.message});}
+  if(!body||typeof body.password!=='string')return json(400,{error:'Enter your Score Sing access code'});
+  const ip=req.socket.remoteAddress||'unknown',failure=failureFor(ip);
+  if(failure&&failure.count>=loginLimit){res.setHeader('Retry-After',Math.ceil((failure.until-Date.now())/1000));return json(429,{error:'Too many sign-in attempts. Try again later.'});}
+  if(!passwordMatches(body.password,loginPassword)){recordFailure(ip);return json(401,{error:'The access code is not valid'});}
+  loginFailures.delete(ip);
+  const token=await issueToken({subject:'score-sing-owner',secret:authSecret,ttlSeconds:tokenLifetime});
+  return json(200,{token,expiresIn:tokenLifetime,subject:'score-sing-owner'});
+ }
  if(await library(req,res,pathname))return;
  if(await catalogRoutes(req,res,pathname))return;
  if(await exportRoutes(req,res,pathname))return;
@@ -47,4 +71,6 @@ const server=http.createServer(async(req,res)=>{
  }catch{return json(404,{error:'Not found'});}
 });
 // Phone uploads of a 5 MB score need longer than ordinary API calls; each body read has its own deadline.
-server.requestTimeout=60000;server.headersTimeout=10000;server.listen(Number(process.env.PORT),'127.0.0.1');
+server.requestTimeout=60000;server.headersTimeout=10000;
+const port=Number(process.env.PORT||8080),host=process.env.HOST||'127.0.0.1';
+server.listen(port,host,()=>console.log(`Score Sing ${version} listening on http://${host}:${server.address().port}`));

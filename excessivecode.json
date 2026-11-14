@@ -16,9 +16,5 @@
   },
   "deployment": {
     "require_locked_python": true
-  },
-  "auth": {
-    "provider": "authreturn",
-    "authreturn_app_slug": "score-sing"
   }
 }
